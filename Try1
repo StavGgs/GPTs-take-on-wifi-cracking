@@ -1,0 +1,46 @@
+import subprocess
+import random
+import string
+import time
+
+def generate_password(length):
+    """Generates a random password of a given length"""
+    chars = string.ascii_lowercase + string.digits
+    return ''.join(random.choice(chars) for _ in range(length))
+
+def test_password(network, password):
+    """Tests a password on a network"""
+    # Replace this with your own code to test the password on the network
+    # Returns True if the password is correct, False otherwise
+    return random.choice([True, False])
+
+# Set the length of the random passwords to generate
+password_length = 10
+
+while True:
+    # Scan for available networks
+    scan_output = subprocess.run(["netsh", "wlan", "show", "networks"], capture_output=True, text=True)
+    
+    # Parse the output of the scan command to find the network we want to test
+    networks = {}
+    for line in scan_output.stdout.splitlines():
+        if "SSID" in line:
+            network_name = line.split(":")[1].strip()
+            networks[network_name] = None
+        elif "Key Content" in line:
+            network_name = list(networks.keys())[-1]
+            password = line.split(":")[1].strip()
+            networks[network_name] = password
+    
+    # Test each network with a random password
+    for network, password in networks.items():
+        if network == "ARRIS-3A6A":
+            if password == None:
+                # Generate a random password and test it on the network
+                password = generate_password(password_length)
+            if test_password(network, password):
+                print(f"Found correct password for network {network}: {password}")
+                exit()
+    
+    # Wait for a random amount of time before scanning again
+    time.sleep(random.uniform(1.0, 10.0))
